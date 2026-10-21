@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101827">
+<meta name="description" content="Jouw persoonlijke rijmaatje met GPS-snelheid, stemkeuze en ritstatistieken.">
+<title>Rijmaatje · Android-prototype</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1220;--panel:#162235;--panel2:#101b2b;--line:#2b3b51;--muted:#a7b5c8;--text:#f7fafc;--accent:#36d6b0;--button:#25364c}
+body.light{color-scheme:light;--bg:#eef3f8;--panel:#fff;--panel2:#edf3f7;--line:#d5dfeb;--muted:#53657a;--text:#132238;--accent:#087f6a;--button:#e1eaf2}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100vh;display:flex;justify-content:center;transition:background .2s,color .2s}
+main{width:min(100%,540px);padding:20px 16px 34px;display:flex;flex-direction:column;gap:15px}
+header{display:flex;align-items:center;gap:12px;padding:4px 3px}
+.logo{width:48px;height:48px;border-radius:16px;display:grid;place-items:center;background:var(--panel);color:var(--accent);font-size:27px;border:1px solid var(--line)}
+h1{margin:0;font-size:25px;letter-spacing:-.5px}
+.sub{color:var(--muted);font-size:13px;margin-top:3px}
+.head-actions{margin-left:auto;display:flex;gap:8px}
+.iconbtn{width:43px;min-height:43px;padding:8px;border-radius:13px;font-size:18px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:20px}
+.label{color:var(--muted);font-size:12px;letter-spacing:1.5px;font-weight:750;text-align:center}
+.speedline{display:flex;align-items:baseline;justify-content:center;gap:8px;margin:12px 0 4px}
+#speed{font-size:clamp(78px,23vw,118px);line-height:1;font-weight:780;letter-spacing:-5px;font-variant-numeric:tabular-nums}
+.unit{font-size:20px;color:var(--muted);font-weight:650}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:15px;padding:12px;text-align:center;min-width:0}
+.stat-label{font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase}
+.stat-value{font-size:21px;font-weight:760;margin-top:5px;font-variant-numeric:tabular-nums}
+.driving .panel.settings-panel,.driving .help-panel{display:none}
+.driving main{max-width:600px}
+.driving #speed{font-size:clamp(100px,29vw,150px)}
+.driving .logo{background:var(--accent);color:#06251f}
+.driving .panel{padding:22px}
+.mode-pill{font-size:12px;color:var(--accent);font-weight:750;text-align:center;margin-top:8px;display:none}
+.driving .mode-pill{display:block}
+@media(min-width:480px){.stats{grid-template-columns:repeat(4,1fr)}.stat-value{font-size:19px}}
+.status{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--muted);font-size:12px;margin-top:14px;text-align:center}
+.dot{width:8px;height:8px;border-radius:50%;background:#78869a;flex:none}
+.dot.active{background:var(--accent);box-shadow:0 0 10px color-mix(in srgb,var(--accent),transparent 45%)}
+.buttons{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px}
+button{font:inherit;font-weight:700;border:0;border-radius:14px;padding:13px 10px;min-height:49px;cursor:pointer;background:var(--button);color:var(--text)}
+.primary{background:var(--accent);color:#06251f}
+button:disabled{opacity:.48;cursor:default}
+.section-title{font-weight:750;font-size:15px;margin-bottom:12px}
+.setting{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px solid var(--line)}
+.setting:last-child{border-bottom:0}
+.setting-label{font-size:14px;font-weight:650}
+.setting-desc{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.35}
+select{background:var(--panel2);color:var(--text);border:1px solid var(--line);padding:10px;border-radius:10px;font:inherit;max-width:145px}
+.switch{width:48px;height:28px;appearance:none;background:#69788a;border-radius:30px;position:relative;cursor:pointer;flex:none}
+.switch:before{content:"";position:absolute;width:22px;height:22px;left:3px;top:3px;background:white;border-radius:50%;transition:transform .15s}
+.switch:checked{background:var(--accent)}
+.switch:checked:before{transform:translateX(20px)}
+.note{font-size:13px;color:var(--muted);line-height:1.5}
+.statusbox{padding:12px 14px;border-radius:13px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);font-size:13px;line-height:1.45}
+footer{text-align:center;color:var(--muted);opacity:.8;font-size:11px;line-height:1.5;padding:0 8px}
+@media(max-width:360px){.buttons{grid-template-columns:1fr}main{padding:14px 11px}}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div class="logo" aria-hidden="true">⌁</div>
+  <div><h1 id="appTitle">Rijmaatje</h1><div class="sub">Jouw persoonlijke rijmaatje</div></div>
+  <div class="head-actions"><button id="themeBtn" class="iconbtn" aria-label="Wissel thema">☾</button></div>
+</header>
+
+<section class="panel" aria-live="polite">
+  <div class="label">JOUW GPS-SNELHEID</div>
+  <div class="speedline"><span id="speed">—</span><span class="unit">km/u</span></div>
+  <div class="status"><span id="dot" class="dot"></span><span id="status">GPS staat uit</span></div>
+  <div class="buttons">
+    <button id="gpsBtn" class="primary">▶ Start GPS</button>
+    <button id="speakBtn" disabled>🔊 Spreek snelheid</button>
+  </div>
+  <div class="mode-pill">🚗 Autorijmodus staat aan</div>
+  <div class="buttons">
+    <button id="voiceBtn">🎙️ Vraag met stem</button>
+    <button id="stopBtn">■ Stop GPS</button>
+  </div>
+  <div class="stats" aria-live="polite">
+    <div class="stat"><div class="stat-label">Afstand</div><div class="stat-value" id="distance">0,00 km</div></div>
+    <div class="stat"><div class="stat-label">Gemiddeld</div><div class="stat-value" id="average">— km/u</div></div>
+    <div class="stat"><div class="stat-label">Ritduur</div><div class="stat-value" id="duration">00:00</div></div>
+    <div class="stat"><div class="stat-label">Maximum</div><div class="stat-value" id="maximum">— km/u</div></div>
+  </div>
+  <div class="buttons">
+    <button id="resetBtn">↻ Nieuwe rit</button>
+    <button id="driveBtn">🚗 Autorijmodus: uit</button>
+  </div>
+</section>
+
+<section class="panel settings-panel">
+  <div class="section-title">⚙️ Jouw instellingen</div>
+  <div class="setting">
+    <div><div class="setting-label">Kies je rijmaatje</div><div class="setting-desc">Wissel vooraf of tijdens de rit</div></div>
+    <select id="companion" aria-label="Kies je rijmaatje">
+      <option value="maatje">Maatje</option>
+      <option value="ritmaat">Ritmaat</option>
+      <option value="cruisy">Cruisy</option>
+      <option value="buur">Buur</option>
+    </select>
+  </div>
+  <div class="setting">
+    <div><div class="setting-label">Praatstijl</div><div class="setting-desc">Kort, gezellig of automatisch wisselen</div></div>
+    <select id="speechStyle" aria-label="Praatstijl">
+      <option value="short">Kort en duidelijk</option>
+      <option value="friendly" selected>Gezellig</option>
+      <option value="switch">Wissel halverwege</option>
+    </select>
+  </div>
+  <div class="setting">
+    <div><div class="setting-label">Automatisch uitspreken</div><div class="setting-desc">Laat je snelheid periodiek horen</div></div>
+    <input id="autoSwitch" class="switch" type="checkbox" aria-label="Automatisch uitspreken" checked>
+  </div>
+  <div class="setting">
+    <div><div class="setting-label">Hoe vaak?</div><div class="setting-desc">Tijd tussen gesproken updates</div></div>
+    <select id="interval"><option value="15">Elke 15 sec.</option><option value="30" selected>Elke 30 sec.</option><option value="60">Elke minuut</option><option value="120">Elke 2 min.</option></select>
+  </div>
+  <div class="setting">
+    <div><div class="setting-label">Autorijmodus</div><div class="setting-desc">Grote snelheid, minder schermonderdelen</div></div>
+    <input id="driveSwitch" class="switch" type="checkbox" aria-label="Autorijmodus">
+  </div>
+  <div class="setting">
+    <div><div class="setting-label">Nachtmodus</div><div class="setting-desc">Rustiger scherm bij weinig licht</div></div>
+    <button id="themeToggle">Wissel thema</button>
+  </div>
+</section>
+
+<div id="message" class="statusbox">Tik op <strong>Start GPS</strong> en geef locatietoestemming. Voor het beste GPS-signaal: buiten met vrij zicht op de lucht.</div>
+<section class="panel note help-panel">
+  <strong style="color:var(--text)">Spraakbediening</strong><br>
+  Tik op <strong>Vraag met stem</strong> en gebruik bijvoorbeeld: “Hoe snel rijd ik?”, “Hoeveel kilometer heb ik gereden?”, “Wat is mijn gemiddelde snelheid?”, “Hoe lang ben ik onderweg?”, “Wat was mijn hoogste snelheid?”, “Wissel naar Cruisy”, “Kort en duidelijk”, “Gezellig”, “Wissel de stijl”, “Praat minder vaak” of “Vaker”. De app luistert alleen nadat je op die knop tikt. Een eigen wekwoord dat altijd op de achtergrond luistert, werkt nog niet in deze webversie; daarvoor is later een echte Android-app nodig.<br><br>
+  <strong style="color:var(--text)">Veilig gebruik</strong><br>
+  Stel de app vooraf in. Bedien je telefoon niet tijdens het rijden. GPS-snelheid kan vertraagd of onnauwkeurig zijn en is geen vervanging voor je snelheidsmeter.
+</section>
+<footer>Rijmaatje · Prototype 3.2 · GPS-ritgegevens worden alleen tijdens deze browsersessie bijgehouden.</footer>
+</main>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  let watchId = null, speedKmh = null, lastFix = 0, autoTimer = null, firstFixAnnounced = false;
+  let tripStart = null, tripDistanceM = 0, maxSpeedKmh = null, lastCoords = null, lastGoodPointTime = null, durationTimer = null;
+  const setMessage = text => { $('message').textContent = text; };
+  const fmt = n => n.toLocaleString('nl-NL', {minimumFractionDigits:2, maximumFractionDigits:2});
+  const companionNames = {maatje:'Maatje',ritmaat:'Ritmaat',cruisy:'Cruisy',buur:'Buur'};
+  let announcements = 0;
+  function currentCompanion(){ return $('companion').value; }
+  function companionText(kind, value){
+    const name = currentCompanion();
+    const style = $('speechStyle').value;
+    const useFriendly = style==='friendly' || (style==='switch' && announcements % 2 === 1);
+    if(kind==='speed'){
+      if(!useFriendly) return 'Je rijdt '+value+' kilometer per uur.';
+      const lines = {
+        maatje:'Hoi! Je rijdt nu '+value+' kilometer per uur.',
+        ritmaat:'Even een update: je snelheid is '+value+' kilometer per uur.',
+        cruisy:'Lekker onderweg! Je rijdt '+value+' kilometer per uur.',
+        buur:'Nou, je rijdt '+value+' kilometer per uur.'
+      };
+      return lines[name];
+    }
+    return value;
+  }
+  function friendlySpeak(text){
+    if (!('speechSynthesis' in window)) { setMessage('Gesproken uitvoer wordt niet ondersteund in deze browser. Probeer Chrome op Android.'); return; }
+    window.speechSynthesis.cancel();
+    if (typeof window.speechSynthesis.resume === 'function') window.speechSynthesis.resume();
+    const u = new SpeechSynthesisUtterance(text); u.lang='nl-NL';
+    const style = $('speechStyle').value;
+    u.rate = style==='short' ? 1.02 : .92;
+    u.pitch = currentCompanion()==='cruisy' ? 1.10 : currentCompanion()==='buur' ? .94 : 1.03;
+    const voices = window.speechSynthesis.getVoices();
+    const dutch = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('nl'));
+    if (dutch) u.voice = dutch;
+    window.speechSynthesis.speak(u);
+  }
+  function announceSpeed(){
+    if(speedKmh===null || Date.now()-lastFix>10000){
+      friendlySpeak('Ik heb nog geen betrouwbare GPS-snelheid. Wacht even op een GPS-signaal.');
+      return;
+    }
+    announcements++;
+    friendlySpeak(companionText('speed',Math.round(speedKmh)));
+  }
+  function selectCompanion(name){
+    const aliases = {
+      'maatje':'maatje','maatje terug':'maatje','ritmaat':'ritmaat','ritmaatje':'ritmaat',
+      'cruisy':'cruisy','kruisi':'cruisy','buur':'buur','de buur':'buur'
+    };
+    const key=String(name).toLowerCase().trim();
+    if(!aliases[key]) return false;
+    $('companion').value=aliases[key];
+    setMessage('Je rijmaatje is nu '+companionNames[aliases[key]]+'.');
+    friendlySpeak('Hoi, ik ben '+companionNames[aliases[key]]+'.');
+    return true;
+  }
+  function elapsedSeconds(){ return tripStart ? Math.max(0, Math.floor((Date.now()-tripStart)/1000)) : 0; }
+  function durationText(s){
+    const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60;
+    return h>0 ? String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0') : String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+  }
+  function renderStats(){
+    $('distance').textContent=fmt(tripDistanceM/1000)+' km';
+    const secs=elapsedSeconds();
+    $('duration').textContent=durationText(secs);
+    const avg=secs>0 ? (tripDistanceM/1000)/(secs/3600) : null;
+    $('average').textContent=avg!==null && Number.isFinite(avg) ? Math.round(avg)+' km/u' : '— km/u';
+    $('maximum').textContent=maxSpeedKmh!==null ? Math.round(maxSpeedKmh)+' km/u' : '— km/u';
+  }
+  function haversine(a,b){
+    const R=6371000, rad=x=>x*Math.PI/180;
+    const dLat=rad(b.latitude-a.latitude), dLon=rad(b.longitude-a.longitude);
+    const x=Math.sin(dLat/2)**2+Math.cos(rad(a.latitude))*Math.cos(rad(b.latitude))*Math.sin(dLon/2)**2;
+    return 2*R*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+  }
+  function saySpeed(){
+    if (speedKmh===null || Date.now()-lastFix>10000) { friendlySpeak('Sorry, ik heb nog geen betrouwbare GPS-snelheid. Wacht even op een GPS-signaal.'); return; }
+    announceSpeed();
+  }
+  function answerQuestion(said){
+    const s=said.toLowerCase().replace(/[.!?]/g,'').trim();
+    if(/(?:wissel naar|kies|neem|ik wil|ga naar)\s+(?:maatje|ritmaat(?:je)?|cruisy|kruisi|buur|de buur)|^(?:maatje|ritmaat(?:je)?|cruisy|kruisi|buur|de buur)$/.test(s)){
+      const match=s.match(/(ritmaat(?:je)?|maatje|cruisy|kruisi|de buur|buur)$/);
+      if(match && selectCompanion(match[1])) return;
+    }
+    if(/kort en duidelijk|kort praten|praat kort|korte meldingen/.test(s)){
+      $('speechStyle').value='short'; friendlySpeak('Prima. Ik houd het kort en duidelijk.');
+    } else if(/gezellig|praat gezellig|gezellige stem/.test(s)){
+      $('speechStyle').value='friendly'; friendlySpeak('Gezellig! Ik praat wat vriendelijker.');
+    } else if(/wissel.*halverwege|wissel de stijl|automatisch wisselen/.test(s)){
+      $('speechStyle').value='switch'; announcements=0; friendlySpeak('Goed, ik wissel de praatstijl tijdens de rit af.');
+    } else if(/minder vaak|minder praten|minder vaak praten|praat minder/.test(s)){
+      $('interval').value='60'; if($('autoSwitch').checked) updateAuto();
+      friendlySpeak('Natuurlijk! Ik praat voortaan elke minuut.');
+    } else if(/vaker|meer praten|elke 15/.test(s)){
+      $('interval').value='15'; if($('autoSwitch').checked) updateAuto();
+      friendlySpeak('Komt goed! Ik praat voortaan elke 15 seconden.');
+    } else if(/afstand|kilometer gereden|hoe ver|hoeveel kilometer/.test(s)){
+      friendlySpeak('Je hebt ongeveer '+fmt(tripDistanceM/1000)+' kilometer gereden.');
+    } else if(/gemiddeld|gemiddelde snelheid/.test(s)){
+      const secs=elapsedSeconds(), avg=secs>0?(tripDistanceM/1000)/(secs/3600):0;
+      friendlySpeak(secs>0 ? 'Je gemiddelde snelheid is ongeveer '+Math.round(avg)+' kilometer per uur.' : 'Je rit is nog maar net begonnen. Ik heb nog geen gemiddelde snelheid.');
+    } else if(/lang|reistijd|ritduur|hoe lang onderweg|tijd onderweg/.test(s)){
+      const s=elapsedSeconds();
+      friendlySpeak('Je bent '+(s>=3600?Math.floor(s/3600)+' uur en ':'')+Math.floor((s%3600)/60)+' minuten onderweg.');
+    } else if(/maximum|maximaal|hoogste|top snelheid/.test(s)){
+      friendlySpeak(maxSpeedKmh!==null ? 'Je hoogste gemeten snelheid deze rit is '+Math.round(maxSpeedKmh)+' kilometer per uur.' : 'Ik heb nog geen hoogste snelheid gemeten.');
+    } else if(/autorijmodus|rijmodus/.test(s)){
+      setDrivingMode(!$('driveSwitch').checked);
+      friendlySpeak($('driveSwitch').checked ? 'De autorijmodus staat aan.' : 'De autorijmodus staat uit.');
+    } else if(/snelheid|hard|rijd|km|hoe snel/.test(s)){
+      announceSpeed();
+    } else if(/help|wat kan je|wat kun je|welke opdrachten|wat hoor je/.test(s)){
+      friendlySpeak('Je kunt vragen naar je snelheid, afstand, gemiddelde snelheid, reistijd of hoogste snelheid. Je kunt ook zeggen: wissel naar Maatje, Ritmaat, Cruisy of Buur. Of zeg: kort en duidelijk, gezellig, of wissel de stijl.');
+    } else {
+      friendlySpeak('Ik kan je snelheid, afstand, gemiddelde snelheid, reistijd of hoogste snelheid vertellen. Je kunt ook van rijmaatje wisselen.');
+    }
+  }
+  function startGPS(){
+    if(window.RijmaatjeAndroid){ try{ window.RijmaatjeAndroid.startLocationService(); }catch(e){} }
+    if (!navigator.geolocation) { setMessage('Deze browser ondersteunt geen GPS-locatie. Open de HTTPS-versie in Chrome.'); return; }
+    if (watchId!==null) return;
+    if(!tripStart){tripStart=Date.now();durationTimer=setInterval(renderStats,1000);}
+    firstFixAnnounced=false;
+    $('status').textContent='GPS zoeken…'; $('dot').classList.add('active');
+    setMessage('GPS gestart. Wacht op een geldige meting; buiten werkt dit meestal het best.');
+    watchId=navigator.geolocation.watchPosition(pos=>{
+      lastFix=Date.now();
+      const c=pos.coords, raw=c.speed;
+      if(raw!==null && Number.isFinite(raw) && raw>=0){
+        speedKmh=raw*3.6;
+        $('speed').textContent=String(Math.round(speedKmh));
+        $('status').textContent='GPS actief · nauwkeurigheid ±'+Math.round(c.accuracy)+' m';
+        $('speakBtn').disabled=false;
+        if(maxSpeedKmh===null || speedKmh>maxSpeedKmh) maxSpeedKmh=speedKmh;
+        // Spreek bij de eerste geldige GPS-meting meteen één keer, zodat de gebruiker weet dat automatisch praten werkt.
+        if($('autoSwitch').checked && !firstFixAnnounced){
+          firstFixAnnounced=true;
+          if(autoTimer){clearInterval(autoTimer);autoTimer=null;}
+          announceSpeed();
+          updateAuto();
+        }
+      } else $('status').textContent='GPS actief · snelheid nog niet beschikbaar';
+      if(c.accuracy<=50){
+        const point={latitude:c.latitude,longitude:c.longitude};
+        if(lastCoords && lastGoodPointTime){
+          const dt=(Date.now()-lastGoodPointTime)/1000, d=haversine(lastCoords,point);
+          // Ignore implausible GPS jumps and duplicate points.
+          if(dt>0 && d>=2 && d<Math.max(40,dt*60)) tripDistanceM+=d;
+        }
+        lastCoords=point; lastGoodPointTime=Date.now();
+      }
+      renderStats();
+    },err=>{
+      const msgs={1:'Locatietoestemming geweigerd. Sta locatie toe in de browserinstellingen.',2:'GPS-signaal niet beschikbaar. Zet locatie aan en probeer buiten.',3:'GPS reageert te langzaam. Probeer opnieuw met vrij zicht op de lucht.'};
+      $('status').textContent='GPS-probleem'; setMessage(msgs[err.code]||'Er ging iets mis met de GPS.'); $('dot').classList.remove('active');
+    },{enableHighAccuracy:true,maximumAge:1000,timeout:15000});
+  }
+  function stopGPS(){
+    if(window.RijmaatjeAndroid){ try{ window.RijmaatjeAndroid.stopLocationService(); }catch(e){} }
+    if(watchId!==null) navigator.geolocation.clearWatch(watchId);
+    watchId=null; lastCoords=null; lastGoodPointTime=null; speedKmh=null; lastFix=0;
+    $('status').textContent='GPS staat uit'; $('dot').classList.remove('active'); $('speakBtn').disabled=true;
+    if(autoTimer){clearInterval(autoTimer);autoTimer=null;}
+    $('speed').textContent='—';
+    setMessage('GPS gestopt. Je ritgegevens blijven zichtbaar totdat je een nieuwe rit start.');
+    renderStats();
+  }
+  function newTrip(){
+    if(window.RijmaatjeAndroid){ try{ window.RijmaatjeAndroid.stopLocationService(); }catch(e){} }
+    if(watchId!==null) navigator.geolocation.clearWatch(watchId);
+    watchId=null; firstFixAnnounced=false; if(autoTimer){clearInterval(autoTimer);autoTimer=null;}
+    if(durationTimer){clearInterval(durationTimer);durationTimer=null;}
+    speedKmh=null; lastFix=0; tripStart=null; tripDistanceM=0; maxSpeedKmh=null; lastCoords=null; lastGoodPointTime=null;
+    $('speed').textContent='—'; $('status').textContent='GPS staat uit'; $('dot').classList.remove('active'); $('speakBtn').disabled=true;
+    renderStats(); setMessage('Nieuwe rit klaar. Tik op Start GPS om te beginnen.');
+    if($('autoSwitch').checked) updateAuto();
+  }
+  function updateAuto(){
+    if(autoTimer){clearInterval(autoTimer);autoTimer=null;}
+    if($('autoSwitch').checked){
+      const seconds=Number($('interval').value);
+      autoTimer=setInterval(()=>{if(watchId!==null) announceSpeed();},seconds*1000);
+      setMessage(watchId!==null ? 'Automatische snelheidsmeldingen staan aan: elke '+seconds+' seconden.' : 'Automatisch uitspreken staat aan: elke '+seconds+' seconden. Start GPS om de meldingen te horen.');
+    }
+  }
+  function voiceAsk(){
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){setMessage('Spraakherkenning is niet beschikbaar. Probeer Chrome op Android. Je kunt altijd Spreek snelheid gebruiken.');return;}
+    const r=new SR(); r.lang='nl-NL'; r.interimResults=false; r.maxAlternatives=1; $('voiceBtn').disabled=true;
+    setMessage('Ik luister kort. Vraag bijvoorbeeld naar je snelheid, afstand of reistijd.');
+    r.onresult=e=>{const said=e.results[0][0].transcript.toLowerCase();setMessage('Ik hoorde: “'+said+'”');answerQuestion(said);};
+    r.onerror=e=>setMessage('Ik kon je niet verstaan ('+e.error+'). Controleer microfoontoestemming en probeer opnieuw.');
+    r.onend=()=>{$('voiceBtn').disabled=false;};
+    try{r.start();}catch(e){$('voiceBtn').disabled=false;setMessage('Spraakherkenning kon niet starten. Probeer het nog eens.');}
+  }
+  function toggleTheme(){document.body.classList.toggle('light');const light=document.body.classList.contains('light');$('themeBtn').textContent=light?'☀':'☾';}
+  function setDrivingMode(on){
+    $('driveSwitch').checked=on;
+    document.body.classList.toggle('driving',on);
+    $('driveBtn').textContent='🚗 Autorijmodus: '+(on?'aan':'uit');
+  }
+  $('gpsBtn').addEventListener('click',startGPS); $('speakBtn').addEventListener('click',announceSpeed);
+  $('voiceBtn').addEventListener('click',voiceAsk); $('stopBtn').addEventListener('click',stopGPS);
+  $('resetBtn').addEventListener('click',newTrip);
+  $('autoSwitch').addEventListener('change',updateAuto); $('interval').addEventListener('change',updateAuto);
+  $('themeBtn').addEventListener('click',toggleTheme); $('themeToggle').addEventListener('click',toggleTheme);
+  $('driveSwitch').addEventListener('change',e=>setDrivingMode(e.target.checked));
+  $('driveBtn').addEventListener('click',()=>setDrivingMode(!$('driveSwitch').checked));
+  $('companion').addEventListener('change',()=>setMessage('Je rijmaatje is nu '+companionNames[currentCompanion()]+'.'));
+  $('speechStyle').addEventListener('change',()=>setMessage('Praatstijl ingesteld op: '+$('speechStyle').selectedOptions[0].textContent+'.'));
+  updateAuto();
+  renderStats();
+})();
+</script>
+</body>
+</html>
