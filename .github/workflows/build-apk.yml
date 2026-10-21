@@ -1,1 +1,68 @@
+name: Build Rijmaatje APK
 
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download repository files
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Unzip Rijmaatje project
+        run: |
+          ZIP_FILE="rijmaatje-android-startproject.zip"
+          if [ ! -f "$ZIP_FILE" ]; then
+            echo "ZIP-bestand niet gevonden in de hoofdmap."
+            exit 1
+          fi
+          mkdir -p extracted
+          unzip -q "$ZIP_FILE" -d extracted
+          PROJECT_DIR=$(find extracted -type f \( -name settings.gradle -o -name settings.gradle.kts \) -print -quit | xargs -r dirname)
+          if [ -z "$PROJECT_DIR" ]; then
+            echo "Geen Android Gradle-project gevonden in het ZIP-bestand."
+            find extracted -maxdepth 4 -type f
+            exit 1
+          fi
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+          echo "Android-project gevonden in: $PROJECT_DIR"
+
+      - name: Build APK
+        run: |
+          cd "$PROJECT_DIR"
+          if [ -f gradlew ]; then
+            chmod +x gradlew
+            ./gradlew assembleDebug
+          else
+            gradle assembleDebug
+          fi
+
+      - name: Prepare APK
+        run: |
+          APK=$(find "$PROJECT_DIR" -type f -path '*/build/outputs/apk/debug/*.apk' -print -quit)
+          if [ -z "$APK" ]; then
+            echo "Geen APK gevonden na het bouwen."
+            exit 1
+          fi
+          cp "$APK" "$GITHUB_WORKSPACE/rijmaatje-debug.apk"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: rijmaatje-debug-apk
+          path: rijmaatje-debug.apk
+          if-no-files-found: error
