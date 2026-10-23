@@ -37,9 +37,10 @@ jobs:
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
           echo "Project gevonden: $PROJECT_DIR"
 
-                - name: Align Java and Kotlin targets
+      - name: Align Java and Kotlin targets
         run: |
           python3 - <<'PY'
+
           import os
           from pathlib import Path
 
