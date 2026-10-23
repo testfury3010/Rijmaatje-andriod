@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
@@ -26,20 +26,38 @@ jobs:
       - name: Unzip Rijmaatje project
         run: |
           ZIP_FILE="rijmaatje-android-startproject.zip"
-          if [ ! -f "$ZIP_FILE" ]; then
-            echo "ZIP-bestand niet gevonden in de hoofdmap."
-            exit 1
-          fi
+          test -f "$ZIP_FILE" || { echo "ZIP-bestand niet gevonden"; exit 1; }
           mkdir -p extracted
           unzip -q "$ZIP_FILE" -d extracted
           PROJECT_DIR=$(find extracted -type f \( -name settings.gradle -o -name settings.gradle.kts \) -print -quit | xargs -r dirname)
           if [ -z "$PROJECT_DIR" ]; then
-            echo "Geen Android Gradle-project gevonden in het ZIP-bestand."
-            find extracted -maxdepth 4 -type f
+            echo "Geen Android Gradle-project gevonden."
             exit 1
           fi
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
-          echo "Android-project gevonden in: $PROJECT_DIR"
+          echo "Project gevonden: $PROJECT_DIR"
+
+      - name: Align Java and Kotlin targets
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          root = Path(os.environ["PROJECT_DIR"])
+          files = list(root.rglob("build.gradle")) + list(root.rglob("build.gradle.kts"))
+
+          for path in files:
+              text = path.read_text()
+              updated = text.replace(
+                  "JavaVersion.VERSION_1_8",
+                  "JavaVersion.VERSION_17"
+              )
+              if updated != text:
+                  path.write_text(updated)
+                  print("Java-instelling aangepast:", path)
+
+          print("Controle van Gradle-bestanden voltooid.")
+          PY
 
       - name: Build APK
         run: |
@@ -55,7 +73,7 @@ jobs:
         run: |
           APK=$(find "$PROJECT_DIR" -type f -path '*/build/outputs/apk/debug/*.apk' -print -quit)
           if [ -z "$APK" ]; then
-            echo "Geen APK gevonden na het bouwen."
+            echo "Geen APK gevonden."
             exit 1
           fi
           cp "$APK" "$GITHUB_WORKSPACE/rijmaatje-debug.apk"
