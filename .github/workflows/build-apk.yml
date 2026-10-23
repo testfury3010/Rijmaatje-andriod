@@ -37,7 +37,7 @@ jobs:
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
           echo "Project gevonden: $PROJECT_DIR"
 
-          - name: Align Java and Kotlin targets
+                - name: Align Java and Kotlin targets
         run: |
           python3 - <<'PY'
           import os
@@ -46,14 +46,14 @@ jobs:
           root = Path(os.environ["PROJECT_DIR"])
 
           for p in root.rglob("*"):
-              if p.name not in ("build.gradle", "build.gradle.kts"):
-                  continue
-              s = p.read_text()
-              s = s.replace("VERSION_1_8", "VERSION_17")
-              p.write_text(s)
-              print("Gecontroleerd:", p)
-
-          print("Java-instellingen gecontroleerd.")
+              if p.is_file() and p.name in ("build.gradle", "build.gradle.kts"):
+                  s = p.read_text()
+                  s = s.replace("JavaVersion.VERSION_1_8", "JavaVersion.VERSION_17")
+                  s = s.replace("VERSION_1_8", "VERSION_17")
+                  s = s.replace('"1.8"', '"17"')
+                  s = s.replace("'1.8'", "'17'")
+                  p.write_text(s)
+                  print("Gecontroleerd:", p)
           PY 
 
       - name: Build APK
